@@ -1,0 +1,46 @@
+{
+  "name": "pac-preflight",
+  "version": "0.1.0-alpha.1",
+  "description": "Pre-push validator for Pages-as-Code block markup. Uses Gutenberg itself as the oracle.",
+  "type": "module",
+  "bin": {
+    "pac-preflight": "./bin/pac-preflight.mjs"
+  },
+  "main": "./src/index.js",
+  "files": [
+    "bin",
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "test": "node tests/run.js",
+    "start": "node bin/pac-preflight.mjs",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@wordpress/blocks": "^15.17.0",
+    "@wordpress/block-library": "^9.44.0",
+    "@wordpress/element": "^6.44.0",
+    "jsdom": "^25.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  },
+  "keywords": [
+    "wordpress",
+    "gutenberg",
+    "pages-as-code",
+    "pac",
+    "validation",
+    "preflight"
+  ],
+  "author": "",
+  "license": "GPL-2.0-or-later"
+}
