@@ -21,9 +21,14 @@ pac-preflight --stdin < markup           # raw body, no front matter
 pac-preflight <file> --strict            # any non-info issue is fatal
 pac-preflight <file> --only=<rules>      # run subset of checks
 pac-preflight <file> --ignore=<rules>    # skip specific checks
+pac-preflight <file> --fix               # apply auto-fixable repairs in place
+pac-preflight <file> --fix --dry-run     # compute repairs, return fixedContent, do not write
+pac-preflight <file> --fix --max-iterations=N  # cap fix loop (default 3)
 ```
 
 Exit codes: `0` if all issues are `info`, `1` otherwise, `2` on tool error.
+
+See [HARNESS.md](./HARNESS.md) for the agentic integration guide.
 
 ## Status
 
@@ -34,9 +39,10 @@ Phase 1 — core checks implemented and passing fixture tests:
 - [x] `attr_schema_type` / `attr_schema_enum` — schema violations pre-coercion
 - [x] Tokenizer with byte offsets; front-matter-aware
 - [x] CLI flags: `--strict`, `--only`, `--ignore`, `--stdin`
+- [x] `--fix` / `--dry-run`: iterative repair loop driven by `suggestedRepair` byte-range splices
 - [x] Test runner (`npm test`) against fixture corpus
 
-Later phases: deprecated-shape detection, nesting/required-attrs, `--fix`, skill integration, plugin integration.
+Later phases: deprecated-shape detection, nesting/required-attrs, skill integration, plugin integration.
 
 ## Development
 
@@ -51,6 +57,7 @@ Source layout:
 src/
   cli.js                          CLI entry (parses args, calls preflight())
   index.js                        programmatic API
+  fix.js                          iterative repair loop (used by --fix)
   parse-file.js                   front matter split
   tokenize-blocks.js              block comment tokenizer w/ byte offsets
   checks/

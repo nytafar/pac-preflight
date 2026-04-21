@@ -32,6 +32,12 @@ await build({
 			'if (typeof globalThis.window === "undefined") globalThis.window = __w;',
 			'if (typeof globalThis.document === "undefined") globalThis.document = __w.document;',
 			'if (typeof globalThis.self === "undefined") globalThis.self = __w;',
+			// Silence Gutenberg\'s console writes. validateBlock() logs format strings
+			// through globalThis.console; we already capture those messages from its
+			// return value. The CLI uses process.stderr.write directly, so we can
+			// disable console.error/warn/log/info/debug globally without losing any
+			// of our own diagnostics.
+			'for (const m of ["error","warn","log","info","debug"]) console[m] = () => {};',
 		].join('\n'),
 	},
 	external: ['jsdom', 'canvas'],

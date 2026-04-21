@@ -21,6 +21,8 @@ const EXPECTATIONS = {
 	ok: {
 		require: (report) => report.summary.warning === 0 && report.summary.fatal === 0,
 		reason: 'expected no warnings or fatals',
+		fix: (report) => report.fixes.applied === 0 && report.fixes.converged,
+		fixReason: '--fix should be a no-op on ok/ fixtures',
 	},
 	'invalid-block-content': {
 		require: (report) => report.issues.some((i) => i.rule === 'invalid_block_content'),
@@ -29,6 +31,8 @@ const EXPECTATIONS = {
 	'canonical-drift': {
 		require: (report) => report.issues.some((i) => i.rule === 'canonical_drift'),
 		reason: 'expected canonical_drift rule to fire',
+		fix: (report) => report.fixes.converged && report.summary.info === 0 && report.summary.warning === 0,
+		fixReason: '--fix should converge canonical_drift fixtures to a clean report',
 	},
 	'attr-schema': {
 		require: (report) => report.issues.some((i) => i.rule.startsWith('attr_schema')),
@@ -67,6 +71,27 @@ for (const category of readdirSync(fixturesRoot)) {
 			console.error(`       summary: ${JSON.stringify(report.summary)}`);
 			console.error(`       rules:   ${report.issues.map((i) => i.rule).join(', ') || '(none)'}`);
 			failures += 1;
+		}
+
+		if (exp.fix) {
+			checked += 1;
+			const fixResult = spawnSync('node', [bundle, path, '--fix', '--dry-run'], { encoding: 'utf8' });
+			let fixReport;
+			try {
+				fixReport = JSON.parse(fixResult.stdout);
+			} catch (err) {
+				console.error(`[fail] ${category}/${file} --fix: could not parse report — ${err.message}`);
+				failures += 1;
+				continue;
+			}
+			if (exp.fix(fixReport)) {
+				console.log(`[ok]   ${category}/${file} --fix`);
+			} else {
+				console.error(`[fail] ${category}/${file} --fix: ${exp.fixReason}`);
+				console.error(`       fixes:   ${JSON.stringify(fixReport.fixes)}`);
+				console.error(`       summary: ${JSON.stringify(fixReport.summary)}`);
+				failures += 1;
+			}
 		}
 	}
 }

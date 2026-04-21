@@ -6,9 +6,10 @@
  *   pac-preflight --stdin [flags] < markup
  *   pac-preflight --help | --version
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { registerCoreBlocks } from '@wordpress/block-library';
 import { preflight } from './index.js';
+import { applyFixes } from './fix.js';
 
 registerCoreBlocks();
 
@@ -24,6 +25,10 @@ Flags:
   --only=<r1,r2,...>    Only run rules whose id starts with one of these prefixes.
   --ignore=<r1,r2,...>  Skip rules whose id starts with one of these prefixes.
   --stdin               Read markup body (no front matter) from stdin.
+  --fix                 Apply auto-fixable repairs (rewrites file unless --dry-run).
+  --dry-run             With --fix: compute repairs but do not write the file.
+                        The final report includes a fixedContent field.
+  --max-iterations=N    Cap the fix loop (default 3).
 `;
 
 const args = parseArgs(process.argv.slice(2));
@@ -55,12 +60,42 @@ if (args.stdin) {
 	process.exit(2);
 }
 
-const report = preflight(source, {
+const preflightOptions = {
 	sourcePath,
 	only: args.only,
 	ignore: args.ignore,
 	strict: args.strict,
-});
+};
+
+let report;
+if (args.fix) {
+	const fixResult = applyFixes(
+		source,
+		(src) => preflight(src, preflightOptions),
+		{ maxIterations: args.maxIterations },
+	);
+	report = fixResult.finalReport;
+	report.fixes = {
+		applied: fixResult.applied,
+		iterations: fixResult.iterations,
+		converged: fixResult.converged,
+	};
+	const changed = fixResult.source !== source;
+	if (changed && !args.dryRun && !args.stdin) {
+		try {
+			writeFileSync(sourcePath, fixResult.source);
+			report.fixes.wrote = sourcePath;
+		} catch (err) {
+			process.stderr.write(`pac-preflight: cannot write ${sourcePath}: ${err.message}\n`);
+			process.exit(2);
+		}
+	}
+	if (args.dryRun || args.stdin) {
+		report.fixes.fixedContent = fixResult.source;
+	}
+} else {
+	report = preflight(source, preflightOptions);
+}
 
 process.stdout.write(JSON.stringify(report, null, 2) + '\n');
 process.exit(reportExitCode(report, args.strict));
@@ -74,12 +109,25 @@ function parseArgs(argv) {
 		version: false,
 		only: null,
 		ignore: null,
+		fix: false,
+		dryRun: false,
+		maxIterations: 3,
 	};
 	for (const arg of argv) {
 		if (arg === '--help' || arg === '-h') out.help = true;
 		else if (arg === '--version' || arg === '-v') out.version = true;
 		else if (arg === '--strict') out.strict = true;
 		else if (arg === '--stdin') out.stdin = true;
+		else if (arg === '--fix') out.fix = true;
+		else if (arg === '--dry-run') out.dryRun = true;
+		else if (arg.startsWith('--max-iterations=')) {
+			const n = Number.parseInt(arg.slice(17), 10);
+			if (!Number.isFinite(n) || n < 1) {
+				process.stderr.write(`pac-preflight: --max-iterations must be a positive integer\n`);
+				process.exit(2);
+			}
+			out.maxIterations = n;
+		}
 		else if (arg.startsWith('--only=')) out.only = arg.slice(7).split(',').map((s) => s.trim()).filter(Boolean);
 		else if (arg.startsWith('--ignore=')) out.ignore = arg.slice(9).split(',').map((s) => s.trim()).filter(Boolean);
 		else if (arg.startsWith('--')) {
