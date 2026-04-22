@@ -25,7 +25,7 @@ export function applyFixes(initialSource, runPreflight, { maxIterations = 3 } = 
 		const report = runPreflight(source);
 		finalReport = report;
 
-		const repairs = collectRepairs(report.issues);
+		const repairs = collectRepairs(report.issues, source);
 		if (repairs.length === 0) {
 			converged = true;
 			break;
@@ -45,13 +45,17 @@ export function applyFixes(initialSource, runPreflight, { maxIterations = 3 } = 
 	return { source, iterations, applied, converged, finalReport };
 }
 
-function collectRepairs(issues) {
+function collectRepairs(issues, source) {
 	const candidates = [];
 	for (const issue of issues) {
 		if (!issue.autoFixable) continue;
 		const repair = issue.suggestedRepair;
 		if (!repair || repair.kind !== 'replace_byte_range') continue;
 		if (!Array.isArray(issue.byteRange) || issue.byteRange.length !== 2) continue;
+		// Defensive: skip self-splice repairs where the replacement equals the
+		// current source at the byte range. Prevents no-op "applied" counts
+		// from emitting-time bugs in any check module.
+		if (typeof source === 'string' && repair.with === source.slice(issue.byteRange[0], issue.byteRange[1])) continue;
 		candidates.push({
 			rule: issue.rule,
 			severity: issue.severity,

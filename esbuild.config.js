@@ -1,4 +1,5 @@
 import { build } from 'esbuild';
+import { chmodSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 
@@ -43,3 +44,5 @@ await build({
 	external: ['jsdom', 'canvas'],
 	logLevel: 'info',
 });
+
+chmodSync(resolve(__dirname, 'dist/pac-preflight.mjs'), 0o755);

@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { registerCoreBlocks } from '@wordpress/block-library';
 import { preflight } from './index.js';
 import { applyFixes } from './fix.js';
+import { transformReport } from './report-transform.js';
 
 registerCoreBlocks();
 
@@ -29,6 +30,9 @@ Flags:
   --dry-run             With --fix: compute repairs but do not write the file.
                         The final report includes a fixedContent field.
   --max-iterations=N    Cap the fix loop (default 3).
+  --summary             Drop expected/actual/suggestedRepair from each issue.
+  --diff                Replace expected/actual with a unified diff (3 lines context).
+                        If --summary is also set, --summary wins.
 `;
 
 const args = parseArgs(process.argv.slice(2));
@@ -97,7 +101,8 @@ if (args.fix) {
 	report = preflight(source, preflightOptions);
 }
 
-process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+const transformed = transformReport(report, { summary: args.summary, diff: args.diff });
+process.stdout.write(JSON.stringify(transformed, null, 2) + '\n');
 process.exit(reportExitCode(report, args.strict));
 
 function parseArgs(argv) {
@@ -112,6 +117,8 @@ function parseArgs(argv) {
 		fix: false,
 		dryRun: false,
 		maxIterations: 3,
+		summary: false,
+		diff: false,
 	};
 	for (const arg of argv) {
 		if (arg === '--help' || arg === '-h') out.help = true;
@@ -120,6 +127,8 @@ function parseArgs(argv) {
 		else if (arg === '--stdin') out.stdin = true;
 		else if (arg === '--fix') out.fix = true;
 		else if (arg === '--dry-run') out.dryRun = true;
+		else if (arg === '--summary') out.summary = true;
+		else if (arg === '--diff') out.diff = true;
 		else if (arg.startsWith('--max-iterations=')) {
 			const n = Number.parseInt(arg.slice(17), 10);
 			if (!Number.isFinite(n) || n < 1) {

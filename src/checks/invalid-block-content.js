@@ -43,6 +43,14 @@ export function checkInvalidBlockContent({ token, blockType, parsedBlock, source
 	const expected = serialize(parsedBlock);
 	const actual = source.slice(token.byteRange[0], token.byteRange[1]);
 	const reasons = summarizeLogItems(logItems);
+	const canAutoFix = expected !== actual;
+
+	const baseMessage =
+		'Block content does not match save() output; editor will flag as invalid.' +
+		(reasons.length ? ` Reasons: ${reasons.join('; ')}` : '');
+	const message = canAutoFix
+		? baseMessage
+		: baseMessage + ' Canonical re-serialization matches the invalid source; manual fix required.';
 
 	return [
 		{
@@ -51,13 +59,11 @@ export function checkInvalidBlockContent({ token, blockType, parsedBlock, source
 			blockName: token.name,
 			byteRange: token.byteRange,
 			rule: 'invalid_block_content',
-			message:
-				'Block content does not match save() output; editor will flag as invalid.' +
-				(reasons.length ? ` Reasons: ${reasons.join('; ')}` : ''),
+			message,
 			expected,
 			actual,
-			autoFixable: true,
-			suggestedRepair: { kind: 'replace_byte_range', with: expected },
+			autoFixable: canAutoFix,
+			suggestedRepair: canAutoFix ? { kind: 'replace_byte_range', with: expected } : null,
 		},
 	];
 }

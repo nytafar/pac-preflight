@@ -11,10 +11,13 @@
     "bin",
     "dist",
     "src",
+    "scripts",
     "README.md"
   ],
   "scripts": {
-    "build": "node esbuild.config.js",
+    "build": "node esbuild.config.js && node scripts/set-exec-bit.mjs",
+    "postbuild": "node scripts/set-exec-bit.mjs",
+    "prepare": "node scripts/set-exec-bit.mjs",
     "test": "node tests/run.js",
     "start": "node bin/pac-preflight.mjs",
     "prepublishOnly": "npm run build && npm test"
@@ -26,6 +29,7 @@
     "@wordpress/blocks": "^15.17.0",
     "@wordpress/block-library": "^9.44.0",
     "@wordpress/element": "^6.44.0",
+    "diff": "^7.0.0",
     "jsdom": "^25.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
