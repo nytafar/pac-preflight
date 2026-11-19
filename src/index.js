@@ -9,6 +9,7 @@ import { tokenizeBlocks } from './tokenize-blocks.js';
 import { checkInvalidBlockContent } from './checks/invalid-block-content.js';
 import { checkCanonicalDrift } from './checks/canonical-drift.js';
 import { checkAttrSchema } from './checks/attr-schema.js';
+import { checkBareHtml } from './checks/bare-html.js';
 
 /**
  * Run all registered checks on a source string.
@@ -39,6 +40,10 @@ export function preflight(source, options = {}) {
 			rule: `tokenizer_${err.kind}`,
 			message: tokenizerMessage(err),
 		});
+	}
+
+	if (tokenizerErrors.length === 0 && ruleEnabled('bare_html', only, ignore)) {
+		issues.push(...checkBareHtml({ roots: tokens, body, bodyOffset, source }));
 	}
 
 	const visit = (token) => {

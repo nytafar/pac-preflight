@@ -48,6 +48,12 @@ const EXPECTATIONS = {
 		fix: (report) => report.fixes.converged && report.summary.info === 0 && report.summary.warning === 0,
 		fixReason: '--fix should converge canonical_drift fixtures to a clean report',
 	},
+	'bare-html': {
+		require: (report) => report.issues.filter((i) => i.rule === 'bare_html').length === 3 && !report.ok,
+		reason: 'expected 3 bare_html fatals (before, between, after blocks) and ok:false',
+		fix: (report) => report.fixes.converged && report.issues.some((i) => i.rule === 'bare_html'),
+		fixReason: '--fix must leave bare_html in place (not auto-fixable) and converge',
+	},
 	'attr-schema': {
 		require: (report) => report.issues.some((i) => i.rule.startsWith('attr_schema')),
 		reason: 'expected attr_schema rule to fire',

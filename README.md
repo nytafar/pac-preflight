@@ -37,6 +37,7 @@ Phase 1 — core checks implemented and passing fixture tests:
 - [x] `invalid_block_content` — editor-invalidity (the banner trigger)
 - [x] `canonical_drift` — cosmetic drift from canonical form (info)
 - [x] `attr_schema_type` / `attr_schema_enum` — schema violations pre-coercion
+- [x] `bare_html` — markup or text outside any block comment at top level (fatal; plain HTML comments allowed)
 - [x] Tokenizer with byte offsets; front-matter-aware
 - [x] CLI flags: `--strict`, `--only`, `--ignore`, `--stdin`
 - [x] `--fix` / `--dry-run`: iterative repair loop driven by `suggestedRepair` byte-range splices
